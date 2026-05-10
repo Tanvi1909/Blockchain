@@ -1,0 +1,12 @@
+{
+    "Rohan": {
+        "password": "88d4266fd4e6338d13b845fcf289579d209c897823b9217da3e161936f031589",
+        "wallet": "0xaD8cF8C0Ca626BAA0ba78563C5E102Cd591cA1e6",
+        "has_voted": true
+    },
+    "Rishav": {
+        "password": "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4",
+        "wallet": "0xFc4ddE76063585920FA4c0390DEb6f381E142fE3",
+        "has_voted": false
+    }
+}

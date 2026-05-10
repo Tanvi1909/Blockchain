@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Election Results</title>
+
+    <link rel="stylesheet" href="/static/style.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6.7.0/dist/ethers.umd.min.js"></script>
+
+    <style>
+
+        .result-wrapper {
+            width: 90%;
+            max-width: 1200px;
+            margin: 40px auto;
+            text-align: center;
+        }
+
+        .result-stats {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            flex-wrap: wrap;
+            margin-bottom: 40px;
+        }
+
+        .result-card {
+            width: 260px;
+            padding: 30px;
+            border-radius: 28px;
+
+            background: rgba(255,255,255,0.12);
+
+            backdrop-filter: blur(20px);
+
+            border: 1px solid rgba(255,255,255,0.16);
+
+            box-shadow: 0 24px 60px rgba(0,0,0,0.45);
+        }
+
+        .result-card h1 {
+            font-size: 58px;
+            color: #38bdf8;
+        }
+
+        .result-card p {
+            font-size: 24px;
+            color: #dbeafe;
+            margin-top: 12px;
+        }
+
+        .winner-box {
+            margin-top: 25px;
+            font-size: 36px;
+            color: #22c55e;
+            font-weight: bold;
+        }
+
+        .chart-box {
+            width: 100%;
+            padding: 40px;
+            border-radius: 35px;
+
+            background: rgba(255,255,255,0.12);
+
+            backdrop-filter: blur(20px);
+
+            border: 1px solid rgba(255,255,255,0.16);
+
+            box-shadow: 0 24px 60px rgba(0,0,0,0.45);
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+<nav>
+    <h2>Election Results</h2>
+
+    <div>
+        <a href="/">Home</a>
+    </div>
+</nav>
+
+<section class="hero">
+
+    <h1>Live Voting Results</h1>
+
+    <p>Blockchain Based Transparent Vote Counting</p>
+
+</section>
+
+<div class="result-wrapper">
+
+    <div class="result-stats">
+
+        {% for c in candidates %}
+
+        <div class="result-card">
+
+            <h1 id="vote{{ loop.index0 }}">0</h1>
+
+            <p>{{ c.name }} Votes</p>
+
+        </div>
+
+        {% endfor %}
+
+    </div>
+
+    <div class="winner-box" id="winnerText">
+        Calculating Winner...
+    </div>
+
+    <br><br>
+
+    <div class="chart-box">
+
+        <canvas id="voteChart"></canvas>
+
+    </div>
+
+</div>
+
+<script>
+
+const contractAddress = "0x9Ba41DE6806Ae3FaCd529EF85Acc6A36f4Ea9C30";
+
+const contractABI = [
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "name",
+        "type": "string"
+      }
+    ],
+    "name": "addCandidate",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "endVoting",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "startVoting",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "index",
+        "type": "uint256"
+      }
+    ],
+    "name": "vote",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "admin",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "candidates",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "name",
+        "type": "string"
+      },
+      {
+        "internalType": "uint256",
+        "name": "voteCount",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "index",
+        "type": "uint256"
+      }
+    ],
+    "name": "getCandidate",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      },
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getVotingStatus",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      },
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "hasVoted",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "totalCandidates",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "votingEnded",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "votingStarted",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+];
+
+let chart;
+
+async function loadResults() {
+
+    try {
+
+        const provider =
+            new ethers.BrowserProvider(window.ethereum);
+
+        const contract =
+            new ethers.Contract(
+                contractAddress,
+                contractABI,
+                provider
+            );
+
+        const total =
+            Number(await contract.totalCandidates());
+
+        let names = [];
+        let votes = [];
+
+        let maxVotes = -1;
+        let winner = "";
+
+        for (let i = 0; i < total; i++) {
+
+            const candidate =
+                await contract.getCandidate(i);
+
+            const name = candidate[0];
+            const voteCount = Number(candidate[1]);
+
+            names.push(name);
+            votes.push(voteCount);
+
+            document.getElementById(
+                "vote" + i
+            ).innerText = voteCount;
+
+            if (voteCount > maxVotes) {
+                maxVotes = voteCount;
+                winner = name;
+            }
+        }
+
+        document.getElementById("winnerText").innerText =
+            "Winner: " + winner;
+
+        if (!chart) {
+
+            chart = new Chart(
+                document.getElementById("voteChart"),
+                {
+                    type: "bar",
+
+                    data: {
+                        labels: names,
+
+                        datasets: [{
+                            label: "Votes",
+                            data: votes,
+                            borderWidth: 2
+                        }]
+                    },
+
+                    options: {
+                        responsive: true,
+
+                        plugins: {
+                            legend: {
+                                labels: {
+                                    color: "white"
+                                }
+                            }
+                        },
+
+                        scales: {
+
+                            x: {
+                                ticks: {
+                                    color: "white"
+                                }
+                            },
+
+                            y: {
+                                ticks: {
+                                    color: "white"
+                                }
+                            }
+                        }
+                    }
+                }
+            );
+
+        } else {
+
+            chart.data.labels = names;
+
+            chart.data.datasets[0].data = votes;
+
+            chart.update();
+        }
+
+    } catch(error) {
+
+        console.log(error);
+    }
+}
+
+loadResults();
+
+setInterval(loadResults, 3000);
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Register</title>
+
+    <link rel="stylesheet" href="/static/style.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6.7.0/dist/ethers.umd.min.js"></script>
+</head>
+
+<body>
+
+<section class="home">
+
+    <div class="glass">
+
+        <h1>Create Account</h1>
+
+        <p>Secure Blockchain Voting Registration</p>
+
+        {% if error %}
+        <p class="error">{{ error }}</p>
+        {% endif %}
+
+        <form method="POST">
+
+            <input
+                type="text"
+                name="username"
+                placeholder="Username"
+                required
+            >
+
+            <input
+                type="password"
+                name="password"
+                placeholder="Password"
+                required
+            >
+
+            <input
+                id="wallet"
+                name="wallet"
+                placeholder="Connect MetaMask Wallet"
+                readonly
+                required
+            >
+
+            <button
+                type="button"
+                onclick="connectWallet()"
+            >
+                Connect MetaMask
+            </button>
+
+            <button type="submit">
+                Register
+            </button>
+
+        </form>
+
+        <br>
+
+        <a href="/login">
+            <button>
+                Already have account? Login
+            </button>
+        </a>
+
+    </div>
+
+</section>
+
+<script>
+async function connectWallet() {
+
+    try {
+
+        if (!window.ethereum) {
+            alert("Please install MetaMask");
+            return;
+        }
+
+        const provider = new ethers.BrowserProvider(window.ethereum);
+
+        await provider.send("eth_requestAccounts", []);
+
+        const signer = await provider.getSigner();
+
+        const address = await signer.getAddress();
+
+        document.getElementById("wallet").value = address;
+
+    } catch(error) {
+
+        console.log(error);
+
+        alert("Wallet connection failed");
+    }
+}
+</script>
+
+</body>
+</html>

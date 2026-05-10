@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Panel</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6.7.0/dist/ethers.umd.min.js"></script>
+</head>
+
+<body>
+
+<nav>
+    <h2>BlockVote Admin</h2>
+    <div>
+        <a href="/result">Results</a>
+        <a href="/logout">Logout</a>
+    </div>
+</nav>
+
+<section class="hero">
+    <h1>Election Control Panel</h1>
+    <p>Add candidates, generate voting link, start and end election</p>
+
+    <button onclick="connectAdmin()">Connect Admin Wallet</button>
+    <p id="status"></p>
+</section>
+
+<section class="admin-grid">
+
+    <div class="panel">
+        <h2>Voting Link</h2>
+
+        <a href="/generate_link">
+            <button>Generate Link</button>
+        </a>
+
+        {% if vote_link %}
+        <p class="link-box">{{ vote_link }}</p>
+        <button onclick="copyLink()">Copy Link</button>
+        {% endif %}
+
+        <br>
+
+        <button onclick="startVoting()">Start Blockchain Voting</button>
+        <button onclick="endVoting()" class="danger">End Blockchain Voting</button>
+
+        <br>
+
+        <a href="/start_election">
+            <button>Open Website Voting</button>
+        </a>
+
+        <a href="/end_election">
+            <button class="danger">Close Website Voting</button>
+        </a>
+
+        {% if election.active %}
+        <p class="success">Website Voting Status: ACTIVE</p>
+        {% else %}
+        <p class="error">Website Voting Status: CLOSED</p>
+        {% endif %}
+    </div>
+
+    <div class="panel">
+        <h2>Add Candidate</h2>
+
+        <form id="candidateForm" method="POST" action="/save_candidate" enctype="multipart/form-data">
+            <input id="candidateName" name="name" placeholder="Candidate Name" required>
+            <input name="photo" type="file" accept="image/*" required>
+
+            <button type="button" onclick="addCandidate()">Add Candidate</button>
+        </form>
+    </div>
+
+</section>
+
+<section class="candidates">
+    {% for c in candidates %}
+    <div class="card">
+        <img src="{{ c.photo }}">
+        <h2>{{ c.name }}</h2>
+        <p>Candidate {{ loop.index }}</p>
+    </div>
+    {% endfor %}
+</section>
+
+<script>
+const contractAddress = "0x9Ba41DE6806Ae3FaCd529EF85Acc6A36f4Ea9C30";
+
+const contractABI = [
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "name",
+        "type": "string"
+      }
+    ],
+    "name": "addCandidate",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "endVoting",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "startVoting",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "index",
+        "type": "uint256"
+      }
+    ],
+    "name": "vote",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "admin",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "candidates",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "name",
+        "type": "string"
+      },
+      {
+        "internalType": "uint256",
+        "name": "voteCount",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "index",
+        "type": "uint256"
+      }
+    ],
+    "name": "getCandidate",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      },
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getVotingStatus",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      },
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "hasVoted",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "totalCandidates",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "votingEnded",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "votingStarted",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+];
+
+let provider;
+let signer;
+let contract;
+
+async function connectAdmin() {
+    try {
+        if (!window.ethereum) {
+            alert("Install MetaMask first");
+            return;
+        }
+
+        provider = new ethers.BrowserProvider(window.ethereum);
+        await provider.send("eth_requestAccounts", []);
+        signer = await provider.getSigner();
+
+        contract = new ethers.Contract(contractAddress, contractABI, signer);
+
+        const address = await signer.getAddress();
+
+        document.getElementById("status").innerText =
+            "Admin wallet connected: " + address;
+
+    } catch (error) {
+        console.log(error);
+        document.getElementById("status").innerText =
+            "Wallet connection failed";
+    }
+}
+
+async function addCandidate() {
+    try {
+        if (!contract) {
+            alert("Connect admin wallet first");
+            return;
+        }
+
+        const name = document.getElementById("candidateName").value;
+
+        if (!name) {
+            alert("Enter candidate name");
+            return;
+        }
+
+        document.getElementById("status").innerText =
+            "Adding candidate to blockchain...";
+
+        const tx = await contract.addCandidate(name);
+        await tx.wait();
+
+        document.getElementById("status").innerText =
+            "Candidate added to blockchain successfully";
+
+        document.getElementById("candidateForm").submit();
+
+    } catch (error) {
+        console.log(error);
+        document.getElementById("status").innerText =
+            "Add candidate failed. Use admin wallet and make sure voting has not started.";
+    }
+}
+
+async function startVoting() {
+    try {
+        if (!contract) {
+            alert("Connect admin wallet first");
+            return;
+        }
+
+        document.getElementById("status").innerText =
+            "Starting blockchain voting...";
+
+        const tx = await contract.startVoting();
+        await tx.wait();
+
+        document.getElementById("status").innerText =
+            "Blockchain voting started successfully";
+
+    } catch (error) {
+        console.log(error);
+        document.getElementById("status").innerText =
+            "Start voting failed. Add candidates first.";
+    }
+}
+
+async function endVoting() {
+    try {
+        if (!contract) {
+            alert("Connect admin wallet first");
+            return;
+        }
+
+        document.getElementById("status").innerText =
+            "Ending blockchain voting...";
+
+        const tx = await contract.endVoting();
+        await tx.wait();
+
+        document.getElementById("status").innerText =
+            "Blockchain voting ended successfully";
+
+    } catch (error) {
+        console.log(error);
+        document.getElementById("status").innerText =
+            "End voting failed";
+    }
+}
+
+function copyLink() {
+    const link = "{{ vote_link }}";
+    navigator.clipboard.writeText(link);
+    alert("Voting link copied!");
+}
+</script>
+
+</body>
+</html>

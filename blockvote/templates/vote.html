@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Vote</title>
+
+    <link rel="stylesheet" href="/static/style.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6.7.0/dist/ethers.umd.min.js"></script>
+</head>
+
+<body>
+
+<nav>
+    <h2>BlockVote</h2>
+
+    <div>
+        <a href="/result">Results</a>
+        <a href="/logout">Logout</a>
+    </div>
+</nav>
+
+<section class="hero">
+
+    <h1>Cast Your Vote</h1>
+
+    <p>Welcome, {{ username }}</p>
+
+    <p>Registered Wallet: {{ wallet }}</p>
+
+    <button onclick="connectWallet()">
+        Connect MetaMask
+    </button>
+
+    <p id="walletText"></p>
+
+    <p id="status"></p>
+
+</section>
+
+<section class="candidates">
+
+    {% for c in candidates %}
+
+    <div class="card">
+
+        <img src="{{ c.photo }}">
+
+        <h2>{{ c.name }}</h2>
+
+        <p>Candidate {{ loop.index }}</p>
+
+        <button onclick="voteCandidate({{ loop.index0 }})">
+            Vote {{ c.name }}
+        </button>
+
+    </div>
+
+    {% endfor %}
+
+</section>
+
+<script>
+
+const registeredWallet = "{{ wallet }}";
+
+const contractAddress = "0x9Ba41DE6806Ae3FaCd529EF85Acc6A36f4Ea9C30";
+
+const contractABI =  [
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "name",
+        "type": "string"
+      }
+    ],
+    "name": "addCandidate",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "endVoting",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "startVoting",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "index",
+        "type": "uint256"
+      }
+    ],
+    "name": "vote",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "admin",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "candidates",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "name",
+        "type": "string"
+      },
+      {
+        "internalType": "uint256",
+        "name": "voteCount",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "index",
+        "type": "uint256"
+      }
+    ],
+    "name": "getCandidate",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      },
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getVotingStatus",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      },
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "hasVoted",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "totalCandidates",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "votingEnded",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "votingStarted",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+];
+
+let provider;
+let signer;
+let contract;
+
+async function connectWallet() {
+
+    try {
+
+        if (!window.ethereum) {
+            alert("Please install MetaMask");
+            return;
+        }
+
+        provider = new ethers.BrowserProvider(window.ethereum);
+
+        await provider.send("eth_requestAccounts", []);
+
+        signer = await provider.getSigner();
+
+        const address = await signer.getAddress();
+
+        document.getElementById("walletText").innerText =
+            "Connected Wallet: " + address;
+
+        if (address.toLowerCase() !== registeredWallet.toLowerCase()) {
+
+            document.getElementById("status").innerText =
+                "Wrong wallet. Fake identity blocked.";
+
+            return;
+        }
+
+        contract = new ethers.Contract(
+            contractAddress,
+            contractABI,
+            signer
+        );
+
+        document.getElementById("status").innerText =
+            "Wallet verified successfully";
+
+    } catch(error) {
+
+        console.log(error);
+
+        document.getElementById("status").innerText =
+            "Wallet connection failed";
+    }
+}
+
+async function voteCandidate(index) {
+
+    try {
+
+        if (!contract) {
+            alert("Connect correct wallet first");
+            return;
+        }
+
+        const address = await signer.getAddress();
+
+        const check = await fetch("/check_vote", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                wallet: address
+            })
+        });
+
+        const result = await check.json();
+
+        if (!result.allowed) {
+
+            document.getElementById("status").innerText =
+                result.message;
+
+            return;
+        }
+
+        const alreadyVoted =
+            await contract.hasVoted(address);
+
+        if (alreadyVoted) {
+
+            document.getElementById("status").innerText =
+                "Blockchain says this wallet already voted";
+
+            return;
+        }
+
+        document.getElementById("status").innerText =
+            "Waiting for MetaMask approval...";
+
+        const tx = await contract.vote(index);
+
+        await tx.wait();
+
+        await fetch("/mark_voted", {
+            method: "POST"
+        });
+
+        window.location.href = "/success";
+
+    } catch(error) {
+
+        console.log(error);
+
+        document.getElementById("status").innerText =
+            "Transaction failed or cancelled";
+    }
+}
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Vote Submitted</title>
+
+    <link rel="stylesheet" href="/static/style.css">
+
+    <style>
+
+        .success-container {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 30px;
+        }
+
+        .success-card {
+            width: 700px;
+            padding: 60px;
+            text-align: center;
+
+            border-radius: 35px;
+
+            background: rgba(255,255,255,0.12);
+
+            backdrop-filter: blur(20px);
+
+            border: 1px solid rgba(255,255,255,0.16);
+
+            box-shadow: 0 30px 80px rgba(0,0,0,0.55);
+        }
+
+        .success-icon {
+            font-size: 90px;
+            margin-bottom: 20px;
+        }
+
+        .success-card h1 {
+            font-size: 64px;
+            color: #38bdf8;
+            margin-bottom: 18px;
+        }
+
+        .success-card p {
+            font-size: 22px;
+            color: #dbeafe;
+            margin: 16px 0;
+        }
+
+        .success-card .highlight {
+            color: #22c55e;
+            font-weight: bold;
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+<div class="success-container">
+
+    <div class="success-card">
+
+        <div class="success-icon">
+            ✅
+        </div>
+
+        <h1>Vote Submitted</h1>
+
+        <p>
+            Your vote has been securely stored on blockchain.
+        </p>
+
+        <p class="highlight">
+            Thank you for participating in the election.
+        </p>
+
+        <br>
+
+        <a href="/">
+            <button>
+                Return to Home
+            </button>
+        </a>
+
+        <a href="/result">
+            <button>
+                View Live Results
+            </button>
+        </a>
+
+    </div>
+
+</div>
+
+</body>
+</html>
